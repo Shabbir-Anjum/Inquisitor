@@ -12,7 +12,6 @@ const AgentTalk = () => {
   const [agentName, setAgentName] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('');
   const audioRef = useRef(null);
-  const videoRef = useRef(null);
   const [agentId, setAgentId] = useState(null);
   const [token, setToken] = useState(null);
   const hasGreetingRun = useRef(false);
@@ -20,7 +19,6 @@ const AgentTalk = () => {
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
-  const [aiUserResponse, setAiUserResponse] = useState([]);
 
   const greeting = useCallback(async () => {
     if (!agentId || !token || hasGreetingRun.current) return;
@@ -43,7 +41,6 @@ const AgentTalk = () => {
       const responseData = await response.json();
       if (responseData.ai_text) {
         generateSpeech(responseData.ai_text);
-        setAiUserResponse(prev => [...prev, `answer:${responseData.ai_text}`]);
       } else {
         console.error('AI text not found in the response');
         setShowAlert(true);
@@ -130,11 +127,11 @@ const AgentTalk = () => {
     setIsListening(prev => !prev);
     if (!isListening) {
       recognitionRef.current.start();
-      videoRef.current.play();
+ 
       setTranscript('');
     } else {
       recognitionRef.current.stop();
-      videoRef.current.pause();
+     
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -151,7 +148,6 @@ const AgentTalk = () => {
   const sendTranscriptToBackend = async (text) => {
     if (!text.trim() || !agentId || !token) return;
     console.log(text)
-    setAiUserResponse(prev => [...prev, `question:${text.trim()}`]);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER}/api/console/talk/${agentId}/`, {
         method: 'POST',
