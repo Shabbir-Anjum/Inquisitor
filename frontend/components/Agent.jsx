@@ -1,14 +1,17 @@
+'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Head from 'next/head';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import Lottie from 'react-lottie';
+
 const AgentTalk = () => {
-  const [animationData, setAnimationData] = React.useState(null);
+  const [animationData, setAnimationData] = useState(null);
   const email = useSelector((state) => state.chat.email);
   const { id } = useParams();
   const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
   const [agentName, setAgentName] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('');
   const audioRef = useRef(null);
@@ -19,6 +22,115 @@ const AgentTalk = () => {
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
+
+  // Show alert with a specific message
+  const showErrorAlert = (message) => {
+    setAlertMessage(message);
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 5000);
+  };
+
+  // Speech Recognition Setup
+  useEffect(() => {
+    // Check for speech recognition support
+    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US'; // Set language
+
+      recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
+      };
+
+      recognitionRef.current.onresult = (event) => {
+        const latestResult = event.results[event.results.length - 1];
+        const latestTranscript = latestResult[0].transcript;
+        setTranscript(latestTranscript);
+
+        // Clear any existing timeout
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+        // Set new timeout to detect silence
+        timeoutRef.current = setTimeout(async () => {
+          await sendTranscriptToBackend(latestTranscript);
+        }, 1500); // Increased timeout to 1.5 seconds
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        switch (event.error) {
+          case 'no-speech':
+            showErrorAlert('No speech was detected. Please try again.');
+            break;
+          case 'audio-capture':
+            showErrorAlert('Audio capture failed. Check your microphone.');
+            break;
+          case 'not-allowed':
+            showErrorAlert('Microphone permission denied. Please allow microphone access.');
+            break;
+          default:
+            showErrorAlert('An error occurred with speech recognition.');
+        }
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        if (isListening) {
+          try {
+            recognitionRef.current.start();
+          } catch (error) {
+            console.error('Error restarting speech recognition:', error);
+            setIsListening(false);
+            showErrorAlert('Failed to restart speech recognition.');
+          }
+        }
+      };
+    } else {
+      showErrorAlert('Speech recognition is not supported in this browser.');
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [isListening]);
+
+  // Toggle listening mode
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      showErrorAlert('Speech recognition is not available.');
+      return;
+    }
+
+    setIsListening(prev => !prev);
+    
+    if (!isListening) {
+      try {
+        recognitionRef.current.start();
+        setTranscript('');
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+        showErrorAlert('Failed to start speech recognition.');
+        setIsListening(false);
+      }
+    } else {
+      recognitionRef.current.stop();
+      
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      if (transcript.trim()) {
+        sendTranscriptToBackend(transcript);
+      }
+    }
+  };
 
   const greeting = useCallback(async () => {
     if (!agentId || !token || hasGreetingRun.current) return;
@@ -123,21 +235,6 @@ const AgentTalk = () => {
     };
   }, [isListening]);
 
-  const toggleListening = () => {
-    setIsListening(prev => !prev);
-    if (!isListening) {
-      recognitionRef.current.start();
- 
-      setTranscript('');
-    } else {
-      recognitionRef.current.stop();
-     
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    }
-  };
-
 
   useEffect(() => {
     if (agentId && token && !hasGreetingRun.current) {
@@ -220,27 +317,31 @@ const AgentTalk = () => {
       <div className="flex flex-col items-center gap-5 justify-center min-h-screen bg-gray-900 text-white p-4">
         <h1 className="text-3xl font-bold mb-4">{agentName}</h1>
         <div className="w-96 h-96 rounded-full overflow-hidden mb-6">
-       
-        <Lottie options={{ ...defaultOptions, animationData }} height={400} width={400} />
+          <Lottie options={{ ...defaultOptions, animationData }} height={400} width={400} />
         </div>
         <div className="mb-8 ">
-        <button
-          onClick={toggleListening}
-          className={`w-full py-3 rounded-lg px-4 mb-4 ${
-            isListening 
-              ? 'bg-red-600 hover:bg-red-700' 
-              : 'bg-blue-600 hover:bg-blue-700'
-          } text-white transition-colors`}
-        >
-          {isListening ? 'Stop Conversation' : 'Start Conversation'}
-        </button>
-
+          <button
+            onClick={toggleListening}
+            className={`w-full py-3 rounded-lg px-4 mb-4 ${
+              isListening 
+                ? 'bg-red-600 hover:bg-red-700' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            } text-white transition-colors`}
+          >
+            {isListening ? 'Stop Conversation' : 'Start Conversation'}
+          </button>
         </div>
         <audio ref={audioRef} className="hidden" />
         {showAlert && (
           <div className="mt-4 p-4 bg-red-600 text-white rounded-lg">
             <h3 className="font-bold">Error</h3>
-            <p>There was a problem processing your speech. Please try again.</p>
+            <p>{alertMessage}</p>
+          </div>
+        )}
+        {transcript && (
+          <div className="mt-4 p-4 bg-gray-800 text-white rounded-lg">
+            <h3 className="font-bold">Transcript:</h3>
+            <p>{transcript}</p>
           </div>
         )}
       </div>
