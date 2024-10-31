@@ -20,7 +20,7 @@ const AgentTalk = () => {
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
-
+  const [aiUserResponse, setAiUserResponse] = useState([]);
 
   const greeting = useCallback(async () => {
     if (!agentId || !token || hasGreetingRun.current) return;
@@ -43,6 +43,7 @@ const AgentTalk = () => {
       const responseData = await response.json();
       if (responseData.ai_text) {
         generateSpeech(responseData.ai_text);
+        setAiUserResponse(prev => [...prev, `answer:${responseData.ai_text}`]);
       } else {
         console.error('AI text not found in the response');
         setShowAlert(true);
@@ -150,6 +151,7 @@ const AgentTalk = () => {
   const sendTranscriptToBackend = async (text) => {
     if (!text.trim() || !agentId || !token) return;
     console.log(text)
+    setAiUserResponse(prev => [...prev, `question:${text.trim()}`]);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER}/api/console/talk/${agentId}/`, {
         method: 'POST',
