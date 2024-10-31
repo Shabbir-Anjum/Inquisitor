@@ -1,31 +1,43 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, List, Brain, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/utils/auth";
-
-const Logo = () => (
-  <div className="flex items-center">
-    <Brain className="text-blue-500 mr-2" size={32} />
-    <span className="text-xl font-bold">Intervuo</span>
-  </div>
-);
-
+import Lottie from 'react-lottie';
 export const Header = () => {
   const auth = useAuth();
-
+  const [animationData, setAnimationData] = React.useState(null);
   const handleLogout = async (e) => {
     e.preventDefault();
 
     await auth.logout();
   };
+  
+
+  const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: null, // This will be set later with the fetched JSON data
+    rendererSettings: {
+      preserveAspectRatio: 'xMidYMid slice'
+    }
+  };
+  useEffect(()=>{
+    fetch('https://lottie.host/ea982e1a-4684-4774-a38a-af3c9c5b2955/xTvpGD0eYA.json')
+    .then(response => response.json())
+    .then(data => setAnimationData(data));
+  },[])
 
   return (
     <header className="absolute top-0 left-0 right-0 z-20 bg-black bg-opacity-20">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/">
-          <Logo />
+        <div className="flex items-center gap-2">
+     <Lottie options={{ ...defaultOptions, animationData }} height={48} width={48} />
+    <span className="text-xl font-bold ">Inquisitor
+    </span>
+  </div>
         </Link>
         <nav>
           <ul className="flex space-x-6">
@@ -132,12 +144,11 @@ const SimplifiedAIAssistantPage = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
-  console.log(auth);
 
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-fixed relative text-white flex items-center"
-      style={{ backgroundImage: 'url("/1.jpg")' }}
+      style={{ backgroundImage: 'url("/1.webp")' }}
     >
       <div className="absolute inset-0 bg-black bg-opacity-60"></div>
       <Header auth={auth} />
