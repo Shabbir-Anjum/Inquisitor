@@ -13,4 +13,4 @@
 |---------------|------|-------------------------------|
 |    backend    | 8001 |                               |
 |   database    | 8080 |                               |
-|   frontend    | 3001 |    https://inquisitor.tech/   |
+|   frontend    | 3001 |    https://inquisitor.site/   |
