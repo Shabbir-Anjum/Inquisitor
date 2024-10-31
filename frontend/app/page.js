@@ -115,7 +115,7 @@ export const Header = () => {
 export const Footer = () => (
   <footer className="absolute bottom-0 left-0 right-0 z-20 bg-black bg-opacity-20">
     <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-      <div className="text-xs md:text-sm">© 2024 Intervuo. All rights reserved.</div>
+      <div className="text-xs md:text-sm">© 2024 Inquisitor. All rights reserved.</div>
       <div className="flex space-x-4">
         <Link href="/settings" className="hover:text-blue-400 transition-colors">
           <Settings size={18} />
