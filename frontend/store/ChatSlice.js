@@ -8,7 +8,6 @@ const initialState = {
   currentAgentName: null,
   agentdata:null,
 };
-
 export const chatSlice = createSlice({
   name: 'chat',
   initialState,
