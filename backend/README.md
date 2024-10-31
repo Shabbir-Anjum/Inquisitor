@@ -11,6 +11,6 @@
   ### Mapping of the ports and services:
 | Folder        | Port |            Deployed           |
 |---------------|------|-------------------------------|
-|    backend    | 8001 |     https://intervuo.tech/    |
-|   database    | 8080 |     https://intervuo.site/    |
-|   frontend    | 3000 | https://voca-mind.vercel.app/ |
+|    backend    | 8001 |                               |
+|   database    | 8080 |                               |
+|   frontend    | 3001 |    https://inquisitor.tech/   |
