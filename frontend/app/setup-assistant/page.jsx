@@ -104,7 +104,7 @@ const CreateAgentPage = () => {
     }
 
     try {
-      const response = await fetch(`https://intervuo.store/api/media/voices/${voiceName.toLowerCase()}`);
+      const response = await fetch(`https://intervuo.store/api/media/voices/inquisitor_${voiceName.toLowerCase()}`);
       if (!response.ok) throw new Error('Failed to fetch voice sample');
 
       const audioBlob = await response.blob();
