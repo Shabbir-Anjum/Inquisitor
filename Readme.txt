@@ -3,7 +3,6 @@
 Welcome to **Inquisitor**! This AI-powered interviewer bot is developed by **Team Pathfinder** to revolutionize the recruitment process. Inquisitor autonomously conducts interviews, providing a consistent and efficient way to assess candidates without human intervention.
 
 ---
-
 ## 🚀 Features
 
 - **Automated Interviews**: Conduct interviews with multiple candidates autonomously, reducing the need for human involvement.
