@@ -2,7 +2,6 @@
 
 Welcome to **Inquisitor**! This AI-powered interviewer bot is developed by **Team Pathfinder** to revolutionize the recruitment process. Inquisitor autonomously conducts interviews, providing a consistent and efficient way to assess candidates without human intervention.
 
----
 ## 🚀 Features
 
 - **Automated Interviews**: Conduct interviews with multiple candidates autonomously, reducing the need for human involvement.
@@ -10,7 +9,6 @@ Welcome to **Inquisitor**! This AI-powered interviewer bot is developed by **Tea
 - **Voice Interaction**: Uses 11 Labs voice models to deliver a more natural interview experience.
 - **Company Knowledge Integration**: Allows users to integrate company-specific knowledge through files and text for more relevant interview questions.
 
----
 
 ## 🛠️ Technologies Used
 
@@ -21,7 +19,7 @@ Welcome to **Inquisitor**! This AI-powered interviewer bot is developed by **Tea
 - **Node.js & Express**: Backend services manage API requests and data for the frontend.
 - **Django**: Backend services manage API requests and data on the AI side.
 
----
+
 
 ## 🌐 How to Use Inquisitor
 
@@ -32,7 +30,7 @@ Welcome to **Inquisitor**! This AI-powered interviewer bot is developed by **Tea
    - Add knowledge files or text to enhance the AI’s understanding of your company.
 3. **Start Interviewing**: Conduct real-time interviews using the AI bot.
 
----
+
 
 ## 🎯 Goals
 
@@ -42,7 +40,7 @@ Inquisitor is still in its early stages, with plans to:
 - Improve the user interface for an even better experience.
 - Optimize the AI model for more accurate candidate assessments.
 
----
+
 
 ## 💡 Future Development
 
@@ -50,13 +48,13 @@ Inquisitor is still in its early stages, with plans to:
 - **Advanced NLP Models**: Implement advanced natural language processing for deeper analysis.
 - **Custom Avatars**: Provide users the option to create custom avatars for their AI interviewers.
 
----
+
 
 ## 🤝 Contributing
 
 We welcome contributions from the community! Feel free to submit issues, fork the repository, and create pull requests.
 
----
+
 
 ## 📫 Contact Us
 
