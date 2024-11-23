@@ -64,13 +64,19 @@ const AgentTalk = () => {
           const finalTranscript = latestResult[0].transcript.trim();
           setTranscript(finalTranscript);
           lastSpeechTime.current = Date.now();
- 
- 
-          setTimeout(function () {
-  
-            sendTranscriptToBackend(finalTranscript);
-          }, 1000);
           
+          // Clear any existing timeouts
+          if (silenceTimer.current) {
+            clearTimeout(silenceTimer.current);
+          }
+          
+          // Set new timeout for silence detection
+          silenceTimer.current = setTimeout(async () => {
+            const timeSinceLastSpeech = Date.now() - lastSpeechTime.current;
+            if (timeSinceLastSpeech >= 1500) { // 1.5 seconds of silence
+              await sendTranscriptToBackend(finalTranscript);
+            }
+          }, 1500);
         }
       };
     }
@@ -123,112 +129,10 @@ const AgentTalk = () => {
       startListening();
     }
   };
-  const greeting = useCallback(async () => {
-    if (!agentId || !token || hasGreetingRun.current) return;
-    
-    try {
-      hasGreetingRun.current = true;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER}/api/console/sync/${agentId}/`, {
-        method: 'GET',
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "insomnia/9.3.2",
-          Authorization: `JWT ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      const responseData = await response.json();
-      if (responseData.ai_text) {
-        generateSpeech(responseData.ai_text);
-      } else {
-        console.error('AI text not found in the response');
-        setShowAlert(true);
-        setTimeout(() => setShowAlert(false), 5000);
-      }
-    } catch (error) {
-      console.error('Error sending audio to backend:', error);
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 5000);
-      hasGreetingRun.current = false;
-    }
-  }, [agentId, token]);
-
- 
-  const defaultOptions = {
-    loop: true,
-    autoplay: true,
-    animationData: null, // This will be set later with the fetched JSON data
-    rendererSettings: {
-      preserveAspectRatio: 'xMidYMid slice'
-    }
-  };
-
-  useEffect(()=>{
-    fetch('https://lottie.host/3ddc7b2c-c80b-41ac-b690-8e6d9472ebb8/vouBmvBfoT.json')
-    .then(response => response.json())
-    .then(data => setAnimationData(data));
-
-    const storedAgentId = localStorage.getItem("currentAgentId");
-    const storedAgentName = localStorage.getItem('currentAgentName');
-    const storedToken = localStorage.getItem("access");
-    const storedVoiceId = localStorage.getItem('voiceID');
-    
-    if (storedVoiceId) {
-      setSelectedVoice(storedVoiceId);
-    }
-    
-    setAgentId(storedAgentId);
-    setAgentName(storedAgentName || "unknown");
-    setToken(storedToken);
-  },[])
-
-
-  useEffect(() => {
-    if (agentId && token && !hasGreetingRun.current) {
-      greeting();
-    }
-  }, [agentId, token, greeting]);
-
-  const sendTranscriptToBackend = async (text) => {
-    if (!text.trim() || !agentId || !token) return;
-    console.log(text)
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER}/api/console/talk/${agentId}/`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "insomnia/9.3.2",
-          Authorization: `JWT ${token}`,
-        },
-        body: JSON.stringify({
-          "email": email,
-          "human_text": text.trim()
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      const responseData = await response.json();
-      if (responseData.ai_text) {
-        await generateSpeech(responseData.ai_text);
-      } else {
-        throw new Error('AI text not found in the response');
-      }
-    } catch (error) {
-      console.error('Error sending text to backend:', error);
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 5000);
-    }
-  };
 
   const generateSpeech = async (text) => {
     try {
+      setIsSpeaking(true);
       const response = await axios.post(
         `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream`,
         {
@@ -251,14 +155,67 @@ const AgentTalk = () => {
 
       const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
-      audioRef.current.src = audioUrl;
-      await audioRef.current.play();
+      
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        
+        // Add event listeners for audio
+        audioRef.current.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl); // Clean up the URL
+        };
+
+        audioRef.current.onerror = () => {
+          console.error('Audio playback error');
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+
+        try {
+          await audioRef.current.play();
+        } catch (playError) {
+          console.error('Playback error:', playError);
+          setShowAlert(true);
+          setAlertMessage("Click 'Start Conversation' to enable audio playback");
+        }
+      }
     } catch (error) {
       console.error('Error generating speech:', error);
       setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 5000);
+      setAlertMessage("Error generating speech. Please try again.");
+      setIsSpeaking(false);
     }
   };
+
+  const greeting = useCallback(async () => {
+    if (!agentId || !token || hasGreetingRun.current) return;
+    
+    try {
+      hasGreetingRun.current = true;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER}/api/console/sync/${agentId}/`, {
+        method: 'GET',
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "insomnia/9.3.2",
+          Authorization: `JWT ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const responseData = await response.json();
+      if (responseData.ai_text) {
+        await generateSpeech(responseData.ai_text);
+      }
+    } catch (error) {
+      console.error('Error in greeting:', error);
+      setShowAlert(true);
+      setAlertMessage("Error starting conversation. Please try again.");
+      hasGreetingRun.current = false;
+    }
+  }, [agentId, token]);
 
   return (
     <>
@@ -268,16 +225,24 @@ const AgentTalk = () => {
       <div className="flex flex-col items-center gap-5 justify-center min-h-screen bg-gray-900 text-white p-4">
         <h1 className="text-3xl font-bold mb-4">{agentName}</h1>
         <div className="w-96 h-96 rounded-full overflow-hidden mb-6">
-          <Lottie options={{ ...defaultOptions, animationData }} height={400} width={400} />
+          {/* <Lottie 
+            options={{ 
+              ...defaultOptions, 
+              animationData 
+            }} 
+            height={400} 
+            width={400} 
+          /> */}
         </div>
-        <div className="mb-8 ">
+        <div className="mb-8">
           <button
             onClick={toggleListening}
-            className={`w-full py-3 rounded-lg px-4 mb-4 ${
+            className={`w-full py-3 px-4 rounded-lg ${
               isListening 
                 ? 'bg-red-600 hover:bg-red-700' 
                 : 'bg-blue-600 hover:bg-blue-700'
             } text-white transition-colors`}
+            disabled={isSpeaking}
           >
             {isListening ? 'Stop Conversation' : 'Start Conversation'}
           </button>
@@ -285,16 +250,15 @@ const AgentTalk = () => {
         <audio ref={audioRef} className="hidden" />
         {showAlert && (
           <div className="mt-4 p-4 bg-red-600 text-white rounded-lg">
-            <h3 className="font-bold">Error</h3>
             <p>{alertMessage}</p>
           </div>
         )}
-        {/* {transcript && (
+        {transcript && (
           <div className="mt-4 p-4 bg-gray-800 text-white rounded-lg">
             <h3 className="font-bold">Transcript:</h3>
             <p>{transcript}</p>
           </div>
-        )} */}
+        )}
       </div>
     </>
   );
